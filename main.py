@@ -34,7 +34,7 @@ def main():
     new_df = target_df[target_df["sync_flg"] == "new"]
     # update_df = target_df[target_df["sync_flg"] == "update"]
 
-    for _, row in new_df.iterrows():
+    for index, row in new_df.iterrows():
         # print(row)
         # task_name = row["task_name"]
         # start_date = row["start_date"]
@@ -59,8 +59,8 @@ def main():
         }
         event_result = service.events().insert(calendarId=CALENDAR_ID, body=event).execute()
         event_id = event_result["id"]
-        df.loc[_, "eventId"] = event_id
-        df.loc[_, "sync_flg"] = "synced"
+        df.loc[index, "eventId"] = event_id
+        df.loc[index, "sync_flg"] = "synced"
 
     df.to_excel(file_path, index=False)
     print("正常終了")
