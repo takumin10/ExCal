@@ -17,3 +17,9 @@ __pycache__/
 # OS依存
 .DS_Store
 Thumbs.db
+
+# 鍵
+config/service_account.json
+
+# カレンダーID
+config/settings.py
