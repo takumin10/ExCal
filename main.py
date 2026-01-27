@@ -3,8 +3,7 @@ import openpyxl
 
 def main():
     file_path = "test.xlsx"
-    df = pd.read_excel(file_path)
-    # print(df.columns)
+    # df = pd.read_excel(file_path)
     df = pd.read_excel(
         file_path,
         usecols=[
@@ -14,27 +13,33 @@ def main():
             "end_date",
             "start_time",
             "end_time",
-            "sync_flg"
+            "sync_flg",
+            "eventId"
         ]
     )
-    # print("↓Excelファイル読込み内容↓")
-    # print(df)
 
-    # print("↓target_df↓")
     target_df = df[df["sync_flg"].isin(["new", "update"])]
-    # print(target_df)
-    # print(target_df["id"].tolist())
+    new_df = target_df[target_df["sync_flg"] == "new"]
+    update_df = target_df[target_df["sync_flg"] == "update"]
 
-    mask = df["sync_flg"].isin(["new", "update"])
-    print("maskの中身")
-    print(mask)
-    print()
-    print("target_dfの中身")
-    print(target_df)
+    for _, row in new_df.iterrows():
+        task_name = row["task_name"]
+        start_date = row["start_date"]
+        end_date = row["end_date"]
+        start_time = row["start_time"]
+        end_time = row["end_time"]
 
-    df.loc[mask, "sync_flg"] = "synced"
+    for _, row in update_df.iterrows():
+        print(row)
+        eventId = row["eventId"]
+        task_name = row["task_name"]
+        start_date = row["start_date"]
+        end_date = row["end_date"]
+        start_time = row["start_time"]
+        end_time = row["end_time"]
 
-    df.to_excel(file_path, index=False)
+    # df.loc[mask, "sync_flg"] = "synced"
+    # df.to_excel(file_path, index=False)
 
     
 
