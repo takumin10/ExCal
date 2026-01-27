@@ -1,0 +1,19 @@
+# Python 仮想環境
+.venv/
+venv/
+env/
+
+# Python キャッシュ
+__pycache__/
+*.py[cod]
+
+# 環境変数ファイル
+.env
+
+# IDE / エディタ系
+.vscode/
+.idea/
+
+# OS依存
+.DS_Store
+Thumbs.db
