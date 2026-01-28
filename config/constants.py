@@ -6,6 +6,8 @@ SYNC_FLG_NEW = "new"
 SYNC_FLG_UPDATE = "update"
 SYNC_FLG_SYNCED = "synced"
 SYNC_FLG_DELETE = "delete"
+SYNC_FLG_NONE = "none"
+SYNC_FLG_ERROR = "error"
 
 COL_ID = "id"
 COL_TASK_NAME = "task_name"

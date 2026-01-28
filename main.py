@@ -4,21 +4,27 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from datetime import datetime
 from config.settings import CALENDAR_ID
+from config.settings import KEY_FILEPATH
+from config.settings import FILE_PATH
 import config.constants as const
 from common import convert_time
 
-def send_event(service, calendar_id, event, mode, event_id=None):
-    if mode == const.SYNC_FLG_NEW:
+def send_event(service, calendar_id, event, event_type, event_id=None):
+    if event_type == const.SYNC_FLG_NEW:
         return service.events().insert(
             calendarId=calendar_id,
             body=event
         ).execute()
-
-    if mode == const.SYNC_FLG_UPDATE:
+    elif event_type == const.SYNC_FLG_UPDATE:
         return service.events().update(
             calendarId=calendar_id,
             eventId=event_id,
             body=event
+        ).execute()
+    elif event_type == const.SYNC_FLG_DELETE:
+        return service.events().delete(
+            calendarId=calendar_id,
+            eventId=event_id
         ).execute()
 
     raise ValueError("invalid sync mode")
@@ -45,35 +51,61 @@ def build_event(row):
     }
 
 def sync_df(service, df, calendar_id):
-    target_df = df[df[const.COL_SYNC_FLG].isin([const.SYNC_FLG_NEW, const.SYNC_FLG_UPDATE])]
-    for index, row in target_df.iterrows():
-        event = build_event(row)
+    
+    target_idx = df[df[const.COL_SYNC_FLG].isin(
+        [const.SYNC_FLG_NEW, const.SYNC_FLG_UPDATE, const.SYNC_FLG_DELETE]
+    )].index
 
-        result = send_event(
-            service,
-            calendar_id,
-            event,
-            row[const.COL_SYNC_FLG],
-            row.get(const.COL_EVENT_ID)
-        )
+    for index in target_idx:
+        try:
+            row = df.loc[index]
+            event_type = row[const.COL_SYNC_FLG]
+            event_id = row.get(const.COL_EVENT_ID)
+            if event_type in (const.SYNC_FLG_UPDATE, const.SYNC_FLG_DELETE) and not event_id:
+                raise ValueError("event_id not found!")
 
-        if row[const.COL_SYNC_FLG] == const.SYNC_FLG_NEW:
-            df.loc[index, const.COL_EVENT_ID] = result[const.COL_ID]
+            if event_type in (const.SYNC_FLG_NEW, const.SYNC_FLG_UPDATE):
+                event = build_event(row)
+                result = send_event(
+                    service,
+                    calendar_id,
+                    event,
+                    event_type,
+                    event_id
+                )
+            elif event_type == const.SYNC_FLG_DELETE:
+                send_event(
+                    service,
+                    calendar_id,
+                    None,
+                    event_type,
+                    event_id
+                )
+                result = None
 
-        df.loc[index, const.COL_SYNC_FLG] = const.SYNC_FLG_SYNCED
+            if event_type == const.SYNC_FLG_NEW:
+                df.loc[index, const.COL_EVENT_ID] = result["id"]
+                df.loc[index, const.COL_SYNC_FLG] = const.SYNC_FLG_SYNCED
+            elif event_type == const.SYNC_FLG_UPDATE:
+                df.loc[index, const.COL_SYNC_FLG] = const.SYNC_FLG_SYNCED
+            elif event_type == const.SYNC_FLG_DELETE:
+                df.loc[index, const.COL_EVENT_ID] = ''
+                df.loc[index, const.COL_SYNC_FLG] = const.SYNC_FLG_NONE
+        except Exception as e:
+            df.loc[index, const.COL_SYNC_FLG] = const.SYNC_FLG_ERROR
+            print(f"index={index}, error={e}")
+
+
 
 def main():
-    file_path = "test.xlsx"
-    key_filepath = "./config/service_account.json"
     credentials = service_account.Credentials.from_service_account_file(
-        key_filepath,
+        KEY_FILEPATH,
         scopes=const.SCOPES
     )
     service = build('calendar', 'v3', credentials=credentials)
 
-    # df = pd.read_excel(file_path)
     df = pd.read_excel(
-        file_path,
+        FILE_PATH,
         dtype={const.COL_EVENT_ID: "string"},
         usecols=[
             const.COL_ID,
@@ -89,7 +121,7 @@ def main():
 
     sync_df(service, df, CALENDAR_ID)
     
-    df.to_excel(file_path, index=False)
+    df.to_excel(FILE_PATH, index=False)
     print("正常終了")
 
 
