@@ -1,5 +1,9 @@
 from datetime import datetime
 import pandas as pd
+import config.constants as const
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from config.settings import KEY_FILEPATH
 
 def convert_time(bf_time):
     if pd.isna(bf_time):
@@ -16,3 +20,18 @@ def convert_time(bf_time):
             return datetime.strptime(bf_time, "%H:%M").time()
 
     return bf_time
+
+def get_calendar_service():
+    credentials = service_account.Credentials.from_service_account_file(
+        KEY_FILEPATH,
+        scopes=const.SCOPES
+    )
+    service = build('calendar', 'v3', credentials=credentials)
+    return service
+
+def load_excel(file_path, column_names):
+    return pd.read_excel(
+        file_path,
+        dtype={const.COL_EVENT_ID: "string"},
+        usecols=column_names
+    )
