@@ -26,9 +26,10 @@ def send_event(service, calendar_id, event, event_type, event_id=None):
 def build_event(row):
     start_time = convert_time(row[const.COL_START_TIME])
     end_time   = convert_time(row[const.COL_END_TIME])
-
     start_dt = datetime.combine(row[const.COL_START_DATE].date(), start_time)
     end_dt   = datetime.combine(row[const.COL_END_DATE].date(), end_time)
+
+    repeat_type = row[const.COL_REPEAT_TYPE]//TODO: ここから繰り返し予定の必須項目を作る関数に渡す。repeat_typeとrowを渡す。
 
     return {
         'summary': row[const.COL_TASK_NAME],
