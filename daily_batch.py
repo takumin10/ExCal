@@ -28,10 +28,49 @@ def build_event(row):
     end_time   = convert_time(row[const.COL_END_TIME])
     start_dt = datetime.combine(row[const.COL_START_DATE].date(), start_time)
     end_dt   = datetime.combine(row[const.COL_END_DATE].date(), end_time)
+    until = end_dt.strftime('%Y%m%dT%H%M%SZ')
 
-    repeat_type = row[const.COL_REPEAT_TYPE]//TODO: ここから繰り返し予定の必須項目を作る関数に渡す。repeat_typeとrowを渡す。
+    repeat_pattern = row[const.COL_REPEAT_PATTERN]
 
-    return {
+    freq = None
+    INTERVAL = None
+    BYDAY = None
+    BYSETPOS = None
+
+    if repeat_pattern == const.REPEAT_DAILY:
+        freq=const.REPEAT_DAILY
+        INTERVAL=row[const.COL_INTERVAL]
+        BYDAY="MO,TU,WE,TH,FR"
+    elif repeat_pattern == const.REPEAT_WEEKLY:
+        freq=const.REPEAT_WEEKLY
+        INTERVAL=row[const.COL_INTERVAL]
+        BYDAY=row[const.COL_DAYOFWEEK]
+    elif repeat_pattern == const.REPEAT_MONTHLY_DAY:
+        freq=const.MONTHLY
+        INTERVAL=row[const.COL_INTERVAL]
+    elif repeat_pattern == const.REPEAT_MONTHLY_THE:
+        freq=const.MONTHLY
+        INTERVAL=row[const.COL_INTERVAL]
+        BYDAY=row[const.COL_DAYOFWEEK]
+        BYSETPOS=row[const.COL_WEEKOFMONTH]
+    
+    rule = {}
+    if repeat_pattern != const.REPEAT_NONE:
+        rule["FREQ"] = freq
+        rule["INTERVAL"] = INTERVAL
+
+        if repeat_pattern in (const.REPEAT_DAILY, const.REPEAT_WEEKLY, const.REPEAT_MONTHLY_THE):
+            if 'BYDAY' in locals():
+                rule["BYDAY"] = BYDAY
+
+        if repeat_pattern == const.REPEAT_MONTHLY_THE:
+            rule["BYSETPOS"] = BYSETPOS
+
+        rule["UNTIL"] = until
+    
+    rrule = "RRULE:" + ";".join(f"{k}={v}" for k, v in rule.items())
+
+    event = {
         'summary': row[const.COL_TASK_NAME],
         'location': '',
         'description': '',
@@ -44,6 +83,9 @@ def build_event(row):
             'timeZone': const.TIMEZONE
         }
     }
+    if repeat_pattern != const.REPEAT_NONE:
+        event['recurrence'] = [rrule]
+    return event
 
 def sync_df(service, df, calendar_id):
     
