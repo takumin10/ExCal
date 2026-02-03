@@ -24,7 +24,7 @@ COL_START_TIME = "start_time"
 COL_END_TIME = "end_time"
 COL_SYNC_STATUS = "sync_status"
 COL_EVENT_ID = "eventId"
-COL_REPEAT_PATTERN = "repeat_type"
+COL_REPEAT_PATTERN = "repeat_pattern"
 COL_INTERVAL = "interval"
 COL_DAYOFWEEK = "dayOfWeek"
 COL_WEEKOFMONTH = "weekOfMonth"
@@ -44,7 +44,7 @@ TASK_COLUMN_NAMES = [
   COL_WEEKOFMONTH
 ]
 
-REPEAT_TYPES = (
+REPEAT_PATTERNS = (
   REPEAT_NONE,
   REPEAT_DAILY,
   REPEAT_WEEKLY,
