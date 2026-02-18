@@ -4,6 +4,8 @@ import config.constants as const
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from config.settings import KEY_FILEPATH
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 def convert_time(bf_time):
     if pd.isna(bf_time):
@@ -35,3 +37,8 @@ def load_excel(file_path, column_names):
         dtype={const.COL_EVENT_ID: "string"},
         usecols=column_names
     )
+
+def until_utc_z(end_dt_naive: datetime) -> str:
+    end_dt_jst = end_dt_naive.replace(tzinfo=const.TZ)
+    end_dt_utc = end_dt_jst.astimezone(timezone.utc)
+    return end_dt_utc.strftime("%Y%m%dT%H%M%SZ")

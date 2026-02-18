@@ -1,4 +1,7 @@
+from zoneinfo import ZoneInfo
+
 TIMEZONE = "Asia/Tokyo"
+TZ = ZoneInfo(TIMEZONE)
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
@@ -25,7 +28,6 @@ COL_END_TIME = "end_time"
 COL_SYNC_STATUS = "sync_status"
 COL_EVENT_ID = "eventId"
 COL_REPEAT_PATTERN = "repeat_pattern"
-COL_INTERVAL = "interval"
 COL_DAYOFWEEK = "dayOfWeek"
 COL_WEEKOFMONTH = "weekOfMonth"
 
@@ -39,7 +41,6 @@ TASK_COLUMN_NAMES = [
   COL_SYNC_STATUS,
   COL_EVENT_ID,
   COL_REPEAT_PATTERN,
-  COL_INTERVAL,
   COL_DAYOFWEEK,
   COL_WEEKOFMONTH
 ]

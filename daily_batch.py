@@ -1,9 +1,11 @@
 from datetime import datetime
 from config.settings import CALENDAR_ID, FILE_PATH
 import config.constants as const
-from common import convert_time, get_calendar_service, load_excel
+from common import convert_time, get_calendar_service, load_excel, until_utc_z
 
 def send_event(service, calendar_id, event, event_type, event_id=None):
+    print("イベントの内容：", event)
+    # return {"id": "__dry_run__"}
     if event_type == const.SYNC_STATUS_NEW:
         return service.events().insert(
             calendarId=calendar_id,
@@ -28,47 +30,9 @@ def build_event(row):
     end_time   = convert_time(row[const.COL_END_TIME])
     start_dt = datetime.combine(row[const.COL_START_DATE].date(), start_time)
     end_dt   = datetime.combine(row[const.COL_END_DATE].date(), end_time)
-    until = end_dt.strftime('%Y%m%dT%H%M%SZ')
+    until = until_utc_z(end_dt)
 
     repeat_pattern = row[const.COL_REPEAT_PATTERN]
-
-    freq = None
-    INTERVAL = None
-    BYDAY = None
-    BYSETPOS = None
-
-    if repeat_pattern == const.REPEAT_DAILY:
-        freq=const.REPEAT_DAILY
-        INTERVAL=row[const.COL_INTERVAL]
-        BYDAY="MO,TU,WE,TH,FR"
-    elif repeat_pattern == const.REPEAT_WEEKLY:
-        freq=const.REPEAT_WEEKLY
-        INTERVAL=row[const.COL_INTERVAL]
-        BYDAY=row[const.COL_DAYOFWEEK]
-    elif repeat_pattern == const.REPEAT_MONTHLY_DAY:
-        freq=const.MONTHLY
-        INTERVAL=row[const.COL_INTERVAL]
-    elif repeat_pattern == const.REPEAT_MONTHLY_THE:
-        freq=const.MONTHLY
-        INTERVAL=row[const.COL_INTERVAL]
-        BYDAY=row[const.COL_DAYOFWEEK]
-        BYSETPOS=row[const.COL_WEEKOFMONTH]
-    
-    rule = {}
-    if repeat_pattern != const.REPEAT_NONE:
-        rule["FREQ"] = freq
-        rule["INTERVAL"] = INTERVAL
-
-        if repeat_pattern in (const.REPEAT_DAILY, const.REPEAT_WEEKLY, const.REPEAT_MONTHLY_THE):
-            if 'BYDAY' in locals():
-                rule["BYDAY"] = BYDAY
-
-        if repeat_pattern == const.REPEAT_MONTHLY_THE:
-            rule["BYSETPOS"] = BYSETPOS
-
-        rule["UNTIL"] = until
-    
-    rrule = "RRULE:" + ";".join(f"{k}={v}" for k, v in rule.items())
 
     event = {
         'summary': row[const.COL_TASK_NAME],
@@ -79,12 +43,27 @@ def build_event(row):
             'timeZone': const.TIMEZONE
         },
         'end': {
-            'dateTime': end_dt.isoformat(),
+            'dateTime': start_dt.isoformat(),
             'timeZone': const.TIMEZONE
         }
     }
+
+    if repeat_pattern == const.REPEAT_NONE:
+        return event
+
+    if repeat_pattern == const.REPEAT_DAILY:
+        rrule = f"RRULE:FREQ={const.REPEAT_DAILY};BYDAY=MO,TU,WE,TH,FR;UNTIL={until}"
+    elif repeat_pattern == const.REPEAT_WEEKLY:
+        rrule = f"RRULE:FREQ={const.REPEAT_WEEKLY};BYDAY={str(row[const.COL_DAYOFWEEK]).replace(" ", "")};UNTIL={until}"
+    elif repeat_pattern == const.REPEAT_MONTHLY_DAY:
+        rrule = f"RRULE:FREQ={const.MONTHLY};BYMONTHDAY={start_dt.day};UNTIL={until}"
+    elif repeat_pattern == const.REPEAT_MONTHLY_THE:
+        rrule = f"RRULE:FREQ={const.MONTHLY};BYDAY={str(row[const.COL_DAYOFWEEK]).replace(" ", "")};BYSETPOS={int(row[const.COL_WEEKOFMONTH])};UNTIL={until}"
+
     if repeat_pattern != const.REPEAT_NONE:
         event['recurrence'] = [rrule]
+    else:
+        raise ValueError(f"unknown repeat_pattern: {repeat_pattern}")
     return event
 
 def sync_df(service, df, calendar_id):
